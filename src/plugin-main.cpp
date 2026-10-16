@@ -1,5 +1,5 @@
 /*
-Portable Export
+Scene Suitcase
 Copyright (C) 2026 Tsuzuri Naoto 332597240+tsuzuri-naoto@users.noreply.github.com
 
 This program is free software; you can redistribute it and/or modify

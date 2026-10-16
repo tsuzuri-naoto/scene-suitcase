@@ -118,7 +118,7 @@ Windows で ANSI コードページとして解釈され、日本語のパスが
   `obs_module_unload` から `export_shutdown()` を呼び、`g_job` があれば `thread.join()` してから破棄する(書き出し途中で OBS を閉じても落ちない。閉じるのは書き出しが終わるまで待つ)
 - `current_collection_file()`:
   1. フォルダ: `config_get_string(obs_frontend_get_app_config(), "Locations", "SceneCollections")` を `path_from_utf8` し `/ "obs-studio/basic/scenes"`。
-     値が空かフォルダが無ければ、`obs_module_config_path("")`(`…/obs-studio/plugin_config/obs-portable-export/`)の末尾の区切りを落として
+     値が空かフォルダが無ければ、`obs_module_config_path("")`(`…/obs-studio/plugin_config/scene-suitcase/`)の末尾の区切りを落として
      `parent_path()` を 2 回した先 `/ "basic/scenes"`(OBS 31 `OBSApp.cpp` の `userScenesLocation` と同じ決め方)
   2. ファイル名: `config_get_string(obs_frontend_get_user_config(), "Basic", "SceneCollectionFile")`。OBS 31 は `.json` 込みで保存しているので、
      末尾が `.json`(ASCII 大小無視)でなければ `.json` を足す
@@ -133,10 +133,10 @@ Windows で ANSI コードページとして解釈され、日本語のパスが
 | 対象(ファイル / 関数) | 変更 |
 |---|---|
 | obs-plugintemplate 一式(`CMakeLists.txt` `CMakePresets.json` `buildspec.json` `cmake/` `build-aux/` `.github/` `.clang-format` `.gersemirc` `src/plugin-support.c.in` `src/plugin-support.h`) | 上記コミットからコピー。`LICENSE` と `README.md` はこちらのものを残す |
-| `buildspec.json` | `name` = `obs-portable-export`、`displayName` = `Portable Export`、`version` = `0.1.0`、`author` = `Tsuzuri Naoto`、`website` = `https://github.com/tsuzuri-naoto/obs-portable-export`、`email` = `332597240+tsuzuri-naoto@users.noreply.github.com`、`platformConfig.macos.bundleId` = `com.tsuzuri-naoto.obs-portable-export` |
+| `buildspec.json` | `name` = `scene-suitcase`、`displayName` = `Scene Suitcase`、`version` = `0.1.0`、`author` = `Tsuzuri Naoto`、`website` = `https://github.com/tsuzuri-naoto/scene-suitcase`、`email` = `332597240+tsuzuri-naoto@users.noreply.github.com`、`platformConfig.macos.bundleId` = `com.tsuzuri-naoto.scene-suitcase` |
 | `CMakeLists.txt`(B3) | `ENABLE_FRONTEND_API` と `ENABLE_QT` の既定を `ON`。`add_subdirectory(core)` し `portable_core` をリンク。`target_sources` を `src/plugin-main.cpp` だけに差し替え |
 | `CMakeLists.txt`(B4) | `target_sources` に `src/export-dialog.cpp` `src/collection-file.cpp` を足す |
-| `src/plugin-main.c`(B3) | 削除し `src/plugin-main.cpp` に置き換え。B3 では `obs_module_load` でメニュー項目を足し、`on_export_menu` は `blog(LOG_INFO, "[obs-portable-export] menu clicked")` だけ。`obs_module_unload` は空 |
+| `src/plugin-main.c`(B3) | 削除し `src/plugin-main.cpp` に置き換え。B3 では `obs_module_load` でメニュー項目を足し、`on_export_menu` は `blog(LOG_INFO, "[scene-suitcase] menu clicked")` だけ。`obs_module_unload` は空 |
 | `src/plugin-main.cpp`(B4) | `on_export_menu` を `run_export(...)` 呼び出しに、`obs_module_unload` を `export_shutdown()` 呼び出しに差し替え |
 | `.github/workflows/build-project.yaml` | `macos-build` / `ubuntu-build` ジョブを削除(Windows だけ) |
 | `.github/workflows/push.yaml` `.github/workflows/pr-pull.yaml` | `check-format` ジョブを削除(下の「採らない案」) |
@@ -241,8 +241,8 @@ nlohmann/json は `json.tar.xz` を `FetchContent_MakeAvailable` し `nlohmann_j
 
 | キー | ja-JP | en-US |
 |---|---|---|
-| `PortableExport.Menu` | ポータブル書き出し… | Portable Export… |
-| `PortableExport.Title` | ポータブル書き出し | Portable Export |
+| `PortableExport.Menu` | Scene Suitcase… | Scene Suitcase… |
+| `PortableExport.Title` | Scene Suitcase | Scene Suitcase |
 | `PortableExport.ParentDir` | 出力先 | Output folder |
 | `PortableExport.Browse` | 参照… | Browse… |
 | `PortableExport.MakeZip` | zip も作る | Also create a zip |
@@ -361,7 +361,7 @@ GitHub Actions: `core-tests`(Ubuntu / Windows)と `build-project` の `windows-b
 - **`current_collection_file()` が OBS の版で合わない** — B4 では実装してビルドを通すところまで(式は OBS 31 のソースに合わせてある)。合っているかは H1 の 3 で見る。
 - **受け取り側の長いパス** — OBS 標準インポートの `CheckPath` は 512 バイトのバッファで絶対パスを作り、超えると `./` のまま残って開けない。出力名は 80 バイトで切るが、受け取り側で深いフォルダに置くと超えうる。H1 の 5 で見る。
 - **H1(人の実機確認)**。書き出しは 書き出し用 PC の OBS(GitHub Actions の `windows-build` の成果物を入れる)、読み込みは 受け取り用 PC の**このプラグインを入れていない** OBS。
-  1. コレクション A(日本語名のソース・画像・メディア・スライドショー・画像マスクフィルタ・表示トランジションにスティンガーを含み、**欠けた素材は無い**)を用意する。「ツール」メニューに「ポータブル書き出し…」が出ることを見る
+  1. コレクション A(日本語名のソース・画像・メディア・スライドショー・画像マスクフィルタ・表示トランジションにスティンガーを含み、**欠けた素材は無い**)を用意する。「ツール」メニューに「Scene Suitcase…」が出ることを見る
   2. A に小さな変更(ソースを 1 つ動かす)を加えて**保存操作をせずに**書き出す。進捗ダイアログが出て、書き出し中も OBS の画面が固まらないことを見る
   3. 出力フォルダの JSON が A であり、2 の変更が入っていることを 受け取り用 PC で開いて確かめる
   4. 受け取り用 PC で「シーンコレクション → インポート」→ 不足ファイルのダイアログが**出ない**こと、見た目が 書き出し用 PC と同じことを見る。zip も展開して同じ確認をする

@@ -1,4 +1,4 @@
-# obs-portable-export
+# Scene Suitcase
 
 > Export an OBS scene collection **together with its media files**, in a form that opens on another PC with **plain OBS — no plugin needed on the receiving side**. (Work in progress)
 

@@ -8,7 +8,7 @@ option(ENABLE_FRONTEND_API "Use obs-frontend-api for UI functionality" ON)
 option(ENABLE_QT "Use Qt functionality" ON)
 
 if(NOT ENABLE_FRONTEND_API OR NOT ENABLE_QT)
-  message(FATAL_ERROR "obs-portable-export requires ENABLE_FRONTEND_API and ENABLE_QT")
+  message(FATAL_ERROR "scene-suitcase requires ENABLE_FRONTEND_API and ENABLE_QT")
 endif()
 
 include(compilerconfig)

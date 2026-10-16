@@ -33,13 +33,13 @@
     },
     "platformConfig": {
         "macos": {
-            "bundleId": "com.tsuzuri-naoto.obs-portable-export"
+            "bundleId": "com.tsuzuri-naoto.scene-suitcase"
         }
     },
-    "name": "obs-portable-export",
-    "displayName": "Portable Export",
+    "name": "scene-suitcase",
+    "displayName": "Scene Suitcase",
     "version": "0.1.0",
     "author": "Tsuzuri Naoto",
-    "website": "https://github.com/tsuzuri-naoto/obs-portable-export",
+    "website": "https://github.com/tsuzuri-naoto/scene-suitcase",
     "email": "332597240+tsuzuri-naoto@users.noreply.github.com"
 }

@@ -1,5 +1,5 @@
 /*
-Portable Export
+Scene Suitcase
 Copyright (C) 2026 Tsuzuri Naoto 332597240+tsuzuri-naoto@users.noreply.github.com
 
 This program is free software; you can redistribute it and/or modify
@@ -38,7 +38,7 @@ std::string to_lower_ascii(std::string s)
 	return s;
 }
 
-// obs_module_config_path("") = ".../obs-studio/plugin_config/obs-portable-export/" から
+// obs_module_config_path("") = ".../obs-studio/plugin_config/scene-suitcase/" から
 // ".../obs-studio" を割り出し、その下の "basic/scenes" を返す。
 std::filesystem::path fallback_scenes_dir()
 {
