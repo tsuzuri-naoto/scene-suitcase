@@ -33,10 +33,13 @@ static void on_export_menu(void *)
 // OBS_FRONTEND_EVENT_EXIT はメインウィンドウと Qt のイベントループがまだ生きているうちに
 // 出る。ここで export_shutdown() を呼んで書き出しスレッドの終了を待つことで、
 // obs_module_unload(メインウィンドウ破棄より後)まで待つより先に、確実に join を終わらせる。
+// 待つ間は export_wait_on_exit() が「終わるまで待っています」の窓を出す(空の画面のまま固まって見えないように)。
 static void on_frontend_event(enum obs_frontend_event event, void *)
 {
-	if (event == OBS_FRONTEND_EVENT_EXIT)
+	if (event == OBS_FRONTEND_EVENT_EXIT) {
+		export_wait_on_exit();
 		export_shutdown();
+	}
 }
 
 bool obs_module_load(void)

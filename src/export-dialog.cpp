@@ -18,14 +18,18 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 
 #include "export-dialog.hpp"
 
+#include <atomic>
+#include <chrono>
 #include <memory>
 #include <string>
 #include <thread>
 
 #include <QCheckBox>
+#include <QCoreApplication>
 #include <QDesktopServices>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QEventLoop>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
@@ -57,8 +61,17 @@ QString qtext(const char *key)
 	return QString::fromUtf8(obs_module_text(key));
 }
 
+// ワーカースレッドと UI スレッドの両方から読み書きする状態。どれも atomic なので排他は要らない。
+// OBS 終了時(wait_for_export_on_exit)に、キューを通さず進み具合と完了を知るために使う。
+struct JobState {
+	std::atomic<bool> done{false};
+	std::atomic<size_t> copied{0};
+	std::atomic<size_t> total{0};
+};
+
 struct ExportJob {
 	std::thread thread;
+	std::shared_ptr<JobState> state = std::make_shared<JobState>();
 };
 
 // 以下はどれも UI スレッドだけが読み書きする(ワーカースレッドは g_job を作る前に一度
@@ -93,6 +106,47 @@ void finish_job()
 		g_progress->close();
 	g_progress = nullptr;
 	g_finished.reset();
+}
+
+// OBS 終了時(OBS_FRONTEND_EVENT_EXIT)に書き出しが残っていたら、終わるまで待つ。
+// 素の join だと UI スレッドが止まり、空のメインウィンドウのまま何分も固まって見える
+// (2026-10-16 の実機確認で 30GB・zip ありで約 2 分)。そこで強制終了されると書き出し途中の
+// ファイルが残るので、小さな「待っています」の窓を出し、描画だけ回しながら(入力は捨てる)待つ。
+// OBS はこの時点で isClosing_ が立っているので、イベントを回しても終了処理が二重に走ることはない。
+void wait_for_export_on_exit()
+{
+	if (!g_job || !g_job->thread.joinable() || g_job->state->done)
+		return;
+
+	// ここから先に届く完了ラムダは結果ダイアログを開かずに捨てる
+	// (開くと終了処理が OK 待ちで止まる)。進捗ラムダも捨て、進み具合は JobState から読む。
+	if (g_finished)
+		*g_finished = true;
+
+	QProgressDialog notice(qtext("PortableExport.WaitingOnExit"), QString(), 0, 0);
+	notice.setWindowTitle(qtext("PortableExport.Title"));
+	notice.setCancelButton(nullptr);
+	notice.setMinimumDuration(0);
+	notice.setAutoReset(false);
+	notice.setAutoClose(false);
+	notice.setWindowFlag(Qt::WindowCloseButtonHint, false);
+	notice.show();
+
+	const std::shared_ptr<JobState> state = g_job->state;
+	while (!state->done) {
+		size_t total = state->total;
+		size_t copied = state->copied;
+		if (total > 0 && copied < total) {
+			notice.setRange(0, static_cast<int>(total));
+			notice.setValue(static_cast<int>(copied));
+		} else {
+			// コピーが終わった後の JSON 書き出し・zip 作成は進み具合が取れないので「作業中」の表示にする。
+			notice.setRange(0, 0);
+		}
+		QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 50);
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	}
+	notice.close();
 }
 
 void show_result(QWidget *parent, const portable::ExportResult &result, bool made_zip)
@@ -260,10 +314,13 @@ void continue_export_after_save(QWidget *parent, QString parent_dir_str, bool ma
 	options.make_zip = make_zip;
 
 	g_job = std::make_unique<ExportJob>();
-	g_job->thread = std::thread([collection, options, parent, finished, make_zip]() mutable {
+	std::shared_ptr<JobState> state = g_job->state; // ワーカースレッドへ渡す分。
+	g_job->thread = std::thread([collection, options, parent, finished, make_zip, state]() mutable {
 		try {
 			portable::ExportResult result = portable::export_collection(
-				collection, options, [parent, finished](size_t done, size_t total) {
+				collection, options, [parent, finished, state](size_t done, size_t total) {
+					state->copied = done;
+					state->total = total;
 					// ワーカースレッドからは QPointer(g_progress)を一切読み書きしない。
 					// receiver には寿命の確実な parent(メインウィンドウ)を渡す
 					// (OBS_FRONTEND_EVENT_EXIT で書き出し完了を待ってから
@@ -307,6 +364,8 @@ void continue_export_after_save(QWidget *parent, QString parent_dir_str, bool ma
 				},
 				Qt::QueuedConnection);
 		}
+		// 成功・失敗のどちらでも、ここまで来たらスレッドの仕事は終わり(あとは join を待つだけ)。
+		state->done = true;
 	});
 }
 
@@ -345,6 +404,13 @@ void run_export(QWidget *parent)
 		parent,
 		[parent, parent_dir_str, make_zip]() { continue_export_after_save(parent, parent_dir_str, make_zip); },
 		Qt::QueuedConnection);
+}
+
+void export_wait_on_exit()
+{
+	// OBS_FRONTEND_EVENT_EXIT のハンドラ(plugin-main.cpp)からだけ呼ぶ。
+	// イベントを回すので、メインウィンドウが破棄された後の obs_module_unload からは呼ばない。
+	wait_for_export_on_exit();
 }
 
 void export_shutdown()

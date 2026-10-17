@@ -116,6 +116,7 @@ Windows で ANSI コードページとして解釈され、日本語のパスが
   6. `ExportError` などの例外は 5 と同じく join・reset してから `QMessageBox::critical`(`PortableExport.Failed` + 例外メッセージ)
 - `ExportJob` = `{ std::thread thread; }`。`g_job` は `src/export-dialog.cpp` のファイル内 `static std::unique_ptr<ExportJob>`。
   `obs_module_unload` から `export_shutdown()` を呼び、`g_job` があれば `thread.join()` してから破棄する(書き出し途中で OBS を閉じても落ちない。閉じるのは書き出しが終わるまで待つ)
+  - 2026-10-16 追記: 実際の待ち合わせは `OBS_FRONTEND_EVENT_EXIT` で行う(`obs_module_unload` はメインウィンドウ破棄の後なので間に合わない)。待つ間は `export_wait_on_exit()` が「書き出しが終わるまで待っています」の窓(`PortableExport.WaitingOnExit`)を出し、`QCoreApplication::processEvents(ExcludeUserInputEvents)` で描画だけ回しながら `JobState`(atomic の完了フラグと進み具合)を見て完了を待つ。素の join だと空のメインウィンドウのまま数分固まって見え、強制終了されると途中のファイルが残るため
 - `current_collection_file()`:
   1. フォルダ: `config_get_string(obs_frontend_get_app_config(), "Locations", "SceneCollections")` を `path_from_utf8` し `/ "obs-studio/basic/scenes"`。
      値が空かフォルダが無ければ、`obs_module_config_path("")`(`…/obs-studio/plugin_config/scene-suitcase/`)の末尾の区切りを落として

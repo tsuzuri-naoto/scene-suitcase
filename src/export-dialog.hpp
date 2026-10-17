@@ -23,5 +23,9 @@ class QWidget;
 // メニューから呼ぶ。出力先ダイアログ〜結果表示まで。
 void run_export(QWidget *parent);
 
-// obs_module_unload から呼ぶ。書き出し中なら終わるまで待つ。
+// OBS_FRONTEND_EVENT_EXIT から、export_shutdown() の前に呼ぶ。書き出し中なら
+// 「終わるまで待っています」の窓を出して、描画を回しながら完了を待つ。
+void export_wait_on_exit();
+
+// OBS_FRONTEND_EVENT_EXIT と obs_module_unload から呼ぶ。書き出し中なら終わるまで待つ。
 void export_shutdown();
