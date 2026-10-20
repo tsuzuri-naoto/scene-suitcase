@@ -58,6 +58,13 @@ function Package {
 
     Remove-Item @RemoveArgs
 
+    # GPL-2.0 requires the license text to accompany the binaries.
+    $LicenseDestination = "${ProjectRoot}/release/${Configuration}/${ProductName}"
+    if ( ! ( Test-Path -Path $LicenseDestination -PathType Container ) ) {
+        throw "Plugin directory not found: ${LicenseDestination}"
+    }
+    Copy-Item -Path "${ProjectRoot}/LICENSE" -Destination "${LicenseDestination}/LICENSE" -Force
+
     Log-Group "Archiving ${ProductName}..."
     $CompressArgs = @{
         Path = (Get-ChildItem -Path "${ProjectRoot}/release/${Configuration}" -Exclude "${OutputName}*.*")

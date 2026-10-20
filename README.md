@@ -36,6 +36,7 @@ OBS 30 以前には読み込まれない(OBS 31.1.1 に合わせてビルドし�
 
 配布物は [Releases](../../releases) にある `scene-suitcase-0.1.0-windows-x64.zip`。
 展開すると `scene-suitcase` フォルダの中に `bin\64bit\scene-suitcase.dll` と `data` フォルダがある。
+同じフォルダの `LICENSE` はライセンス文(GPL-2.0)で、導入ではコピーしなくてよい(0.1.0 の zip には入っていない)。
 
 1. OBS を終了する。
 2. `scene-suitcase\bin\64bit\scene-suitcase.dll` を `C:\Program Files\obs-studio\obs-plugins\64bit\` にコピーする。
@@ -178,6 +179,7 @@ Covered media: images, media sources (video and audio), image slide shows, sting
 ### Install (Windows)
 
 Download `scene-suitcase-0.1.0-windows-x64.zip` from [Releases](../../releases) and extract it.
+`scene-suitcase\LICENSE` is the license text (GPL-2.0) and does not need to be copied (the 0.1.0 zip does not include it).
 
 1. Quit OBS.
 2. Copy `scene-suitcase\bin\64bit\scene-suitcase.dll` to `C:\Program Files\obs-studio\obs-plugins\64bit\`.
